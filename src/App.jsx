@@ -18,11 +18,34 @@ export default function App(){
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Datos capturados listos para enviar a Spring Boot:", formData);
-    alert(`Reserva confirmada para ${formData.cliente} el ${formData.fecha} a las ${formData.hora}`);
-    setFormData(INITIAL_STATE);
+    try {
+        // 1. Enviamos el estado formData a Spring Boot
+        const response = await fetch('http://localhost:8080/api/reservas', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (response.ok) {
+          // 2. Leemos el mensaje de texto enviado por el controlador Java
+          const mensaje = await response.text();
+          console.log('Respuesta del servidor:', mensaje);
+          alert(`¡Reserva confirmada! ${mensaje}`);
+
+          // 3. Limpiamos el formulario solo si el backend confirmó la recepción
+          setFormData(INITIAL_STATE);
+        } else {
+          console.error('Error en el servidor:', response.status);
+          alert('Hubo un problema al guardar la reserva en el servidor.');
+        }
+      } catch (error) {
+        console.error('Error de conexión:', error);
+        alert('No se pudo conectar con el servidor. Revisa si Spring Boot está arrancado.');
+      }
   };
 
 return (
