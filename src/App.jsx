@@ -1,12 +1,15 @@
 import { useState } from "react";
 
+// 1. Estado inicial fuera del componente para reutilizarlo al limpiar
+const INITIAL_STATE = {
+  cliente: '',
+  servicio: 'Corte de pelo',
+  fecha: '',
+  hora: ''
+};
+
 export default function App(){
-  const [formData, setFormData] = useState({
-    cliente: '',
-    servicio: 'corte de pelo',
-    fecha: '',
-    hora: ''
-  });
+  const [formData, setFormData] = useState(INITIAL_STATE);
 
   const handleChange = (e) => {
     setFormData({
@@ -19,6 +22,7 @@ export default function App(){
     e.preventDefault();
     console.log("Datos capturados listos para enviar a Spring Boot:", formData);
     alert(`Reserva confirmada para ${formData.cliente} el ${formData.fecha} a las ${formData.hora}`);
+    setFormData(INITIAL_STATE);
   };
 
 return (
@@ -92,6 +96,13 @@ return (
           Confirmar Reserva
         </button>
       </form>
+      <div style={{ marginTop: '20px', padding: '10px', background: '#f1f5f9', borderRadius: '6px' }}>
+        <h4>Estado en tiempo real (formData):</h4>
+        <p><strong>Cliente:</strong> {formData.cliente}</p>
+  
+        {/* O si quieres ver el objeto completo formateado: */}
+        <pre>{JSON.stringify(formData, null, 2)}</pre>
+      </div>
     </div>
   );
 }
