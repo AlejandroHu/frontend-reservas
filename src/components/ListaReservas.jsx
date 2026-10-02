@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
 import { reservasService } from "../services/reservasService";
 
-export function ListaReservas({ recargar, onEditarReserva }) {
+export function ListaReservas({ recargar, onEditarReserva, onNotificar, onReservaEliminada }) {
   const [reservas, setReservas] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
+
+  // Nuevo estado para almacenar el término de búsqueda
+  const [busqueda, setBusqueda] = useState('');
 
   const cargarReservas = async () => {
     setCargando(true);
@@ -30,16 +33,48 @@ export function ListaReservas({ recargar, onEditarReserva }) {
 
     try {
       await reservasService.delete(id);
-      cargarReservas();
+      onNotificar?.("Reserva cancelada correctamente.", "exito");
+      if (onReservaEliminada) onReservaEliminada();
     } catch (err) {
       console.error(err);
-      alert("Error al intentar eliminar la reserva.");
+      onNotificar?.("Error al intentar eliminar la reserva.", "error");
     }
   };
+
+  // Filtrado dinámico (Estado derivado)
+  const reservasFiltradas = reservas.filter((reserva) => {
+    const termino = busqueda.toLowerCase();
+    const coincideCliente = reserva.cliente.toLowerCase().includes(termino);
+    const coincideServicio = reserva.servicio.toLowerCase().includes(termino);
+    const coincideFecha = reserva.fecha.includes(termino);
+
+    return coincideCliente || coincideServicio || coincideFecha;
+  });
 
   return (
     <div style={{ padding: '24px', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#ffffff' }}>
       <h3 style={{ marginTop: 0, color: '#0f172a' }}>Reservas Confirmadas</h3>
+
+      {/* Input de Búsqueda */}
+      {!cargando && !error && reservas.length > 0 && (
+        <div style={{ marginBottom: '16px' }}>
+          <input
+            type="text"
+            placeholder="🔍 Buscar por cliente, servicio o fecha..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 12px',
+              borderRadius: '8px',
+              border: '1px solid #cbd5e1',
+              fontSize: '14px',
+              boxSizing: 'border-box',
+              outline: 'none'
+            }}
+          />
+        </div>
+      )}
       
       {/* Estado: Cargando */}
       {cargando && (
@@ -58,10 +93,17 @@ export function ListaReservas({ recargar, onEditarReserva }) {
         <p style={{ color: '#64748b', fontSize: '14px' }}>No hay reservas registradas.</p>
       )}
 
-      {/* Estado: Lista de reservas */}
-      {!cargando && !error && reservas.length > 0 && (
+      {/* Estado: Sin resultados tras filtrar */}
+      {!cargando && !error && reservas.length > 0 && reservasFiltradas.length === 0 && (
+        <p style={{ color: '#64748b', fontSize: '14px', textAlign: 'center', padding: '12px 0' }}>
+          No se encontraron reservas para "<strong>{busqueda}</strong>"
+        </p>
+      )}
+
+{/* Lista de reservas filtradas */}
+      {!cargando && !error && reservasFiltradas.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {reservas.map((reserva) => (
+          {reservasFiltradas.map((reserva) => (
             <div 
               key={reserva.id} 
               style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#f8fafc', border: '1px solid #f1f5f9' }}

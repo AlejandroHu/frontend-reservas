@@ -8,7 +8,7 @@ const INITIAL_STATE = {
   hora: ''
 };
 
-export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarEdicion }) {
+export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarEdicion, onNotificar }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,10 +37,10 @@ export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarE
     try {
       if (esEdicion) {
         await reservasService.update(formData.id, formData);
-        alert('¡Reserva actualizada con éxito!');
+        onNotificar?.('¡Reserva actualizada con éxito!', 'exito');
       } else {
         await reservasService.create(formData);
-        alert('¡Reserva confirmada!');
+        onNotificar?.('¡Reserva confirmada con éxito!', 'exito');
       }
 
       setFormData(INITIAL_STATE);
@@ -54,7 +54,7 @@ export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarE
       }
     } catch (error) {
       console.error(error);
-      alert('Hubo un problema al guardar los datos.');
+      onNotificar?.('Hubo un problema al guardar los datos.', 'error');
     } finally {
       setSubmitting(false);
     }
