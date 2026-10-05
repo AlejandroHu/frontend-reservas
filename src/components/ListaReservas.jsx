@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { reservasService } from "../services/reservasService";
+import { ModalConfirmacion } from "./ModalConfirmacion";
 
 export function ListaReservas({ recargar, onEditarReserva, onNotificar, onReservaEliminada }) {
   const [reservas, setReservas] = useState([]);
@@ -8,6 +9,9 @@ export function ListaReservas({ recargar, onEditarReserva, onNotificar, onReserv
 
   // Nuevo estado para almacenar el término de búsqueda
   const [busqueda, setBusqueda] = useState('');
+  
+  // 1. Nuevo estado para controlar la reserva que se pretende eliminar
+  const [reservaAEliminar, setReservaAEliminar] = useState(null);
 
   const cargarReservas = async () => {
     setCargando(true);
@@ -27,17 +31,23 @@ export function ListaReservas({ recargar, onEditarReserva, onNotificar, onReserv
     cargarReservas();
   }, [recargar]);
 
-  const handleEliminar = async (id) => {
-    const confirmar = window.confirm("¿Seguro que quieres cancelar esta reserva?");
-    if (!confirmar) return;
+  // 2. Abre el modal al hacer clic en "Cancelar" guardando la reserva seleccionada
+  const solicitarEliminacion = (reserva) => {
+    setReservaAEliminar(reserva);
+  };
 
+  // 3. Llama a la API solo cuando el usuario confirma dentro del modal
+  const confirmarEliminacion = async () => {
+    if (!reservaAEliminar) return;
     try {
-      await reservasService.delete(id);
+      await reservasService.delete(reservaAEliminar.id);
       onNotificar?.("Reserva cancelada correctamente.", "exito");
       if (onReservaEliminada) onReservaEliminada();
     } catch (err) {
       console.error(err);
       onNotificar?.("Error al intentar eliminar la reserva.", "error");
+    } finally {
+      setReservaAEliminar(null); // Cierra el modal en cualquier caso
     }
   };
 
@@ -128,7 +138,7 @@ export function ListaReservas({ recargar, onEditarReserva, onNotificar, onReserv
                   Editar
                 </button>
                 <button
-                  onClick={() => handleEliminar(reserva.id)}
+                  onClick={() => solicitarEliminacion(reserva)}
                   style={{
                     backgroundColor: '#ef4444', color: 'white', border: 'none',
                     borderRadius: '6px', padding: '6px 12px', fontSize: '12px',
@@ -142,6 +152,14 @@ export function ListaReservas({ recargar, onEditarReserva, onNotificar, onReserv
           ))}
         </div>
       )}
+      {/* 4. Modal de confirmación estilizado */}
+      <ModalConfirmacion
+        isOpen={Boolean(reservaAEliminar)}
+        titulo="Confirmar cancelación"
+        mensaje={`¿Estás seguro de que deseas cancelar la reserva de "${reservaAEliminar?.cliente}" del día ${reservaAEliminar?.fecha}?`}
+        onConfirm={confirmarEliminacion}
+        onCancel={() => setReservaAEliminar(null)}
+      />
     </div>
   );
 }
