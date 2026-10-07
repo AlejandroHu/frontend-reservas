@@ -8,6 +8,21 @@ const INITIAL_STATE = {
   hora: ''
 };
 
+// Helper para generar tramos de 15 minutos (09:00, 09:15, 09:30, ...)
+const generarOpcionesHora = (horaInicio = 9, horaFin = 21) => {
+  const opciones = [];
+  for (let h = horaInicio; h < horaFin; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const horaStr = String(h).padStart(2, '0');
+      const minStr = String(m).padStart(2, '0');
+      opciones.push(`${horaStr}:${minStr}`);
+    }
+  }
+  return opciones;
+};
+
+const HORAS_DISPONIBLES = generarOpcionesHora(9, 21);
+
 export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarEdicion, onNotificar }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [submitting, setSubmitting] = useState(false);
@@ -116,14 +131,30 @@ export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarE
           <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', fontWeight: '500', color: '#334155' }}>
             Hora:
           </label>
-          <input 
-            type="time" 
+          <select 
             name="hora" 
             value={formData.hora} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }} 
-          />
+            style={{ 
+              width: '100%', 
+              padding: '10px', 
+              borderRadius: '6px', 
+              border: '1px solid #cbd5e1', 
+              boxSizing: 'border-box',
+              backgroundColor: '#3b3b3b', // Mismo fondo oscuro que las opciones
+              color: '#ffffff'
+            }}
+          >
+            <option value="" disabled style={{ color: '#94a3b8', backgroundColor: '#3b3b3b' }}>
+              Selecciona una hora
+            </option>
+            {HORAS_DISPONIBLES.map((hora) => (
+              <option key={hora} value={hora} style={{ color: '#ffffff', backgroundColor: '#3b3b3b' }}>
+                {hora}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
