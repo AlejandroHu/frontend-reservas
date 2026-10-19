@@ -23,7 +23,7 @@ const generarOpcionesHora = (horaInicio = 9, horaFin = 21) => {
 
 const HORAS_DISPONIBLES = generarOpcionesHora(9, 21);
 
-export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarEdicion, onNotificar }) {
+export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarEdicion, onNotificar, reservas = [] }) {
   const [formData, setFormData] = useState(INITIAL_STATE);
   const [submitting, setSubmitting] = useState(false);
 
@@ -43,6 +43,32 @@ export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarE
       [e.target.name]: e.target.value
     });
   };
+
+  // 1. Extraemos las horas ocupadas para la fecha seleccionada
+  const horasOcupadas = Array.isArray(reservas)
+    ? reservas
+        .filter((r) => {
+          if (!r || !r.fecha) return false;
+          if (formData.id && r.id === formData.id) return false;
+          return r.fecha === formData.fecha;
+        })
+        .map((r) => r.hora)
+    : [];
+
+  // 2. Formateamos la hora actual del sistema a "HH:mm" (ej: "14:15")
+  const ahora = new Date();
+  const horaActualStr = `${String(ahora.getHours()).padStart(2, '0')}:${String(ahora.getMinutes()).padStart(2, '0')}`;
+
+  // 3. Obtenemos las horas libres descartando ocupadas y pasadas
+  const horasLibres = HORAS_DISPONIBLES.filter((hora) => {
+    // Si la hora ya está ocupada por otra reserva, se descarta
+    if (horasOcupadas.includes(hora)) return false;
+
+    // Si la fecha seleccionada es HOY y la hora ya ha pasado (o es la hora actual), se descarta
+    if (formData.fecha === hoy && hora <= horaActualStr) return false;
+
+    return true;
+  });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,6 +100,8 @@ export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarE
       setSubmitting(false);
     }
   };
+
+  
 
   return (
     <div style={{ padding: '24px', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', backgroundColor: '#ffffff' }}>
@@ -136,20 +164,28 @@ export function FormularioReserva({ onReservaCreada, reservaAEditar, onCancelarE
             value={formData.hora} 
             onChange={handleChange} 
             required 
+            disabled={!formData.fecha} // Deshabilitamos si aún no se ha elegido fecha
             style={{ 
               width: '100%', 
               padding: '10px', 
               borderRadius: '6px', 
               border: '1px solid #cbd5e1', 
               boxSizing: 'border-box',
-              backgroundColor: '#3b3b3b', // Mismo fondo oscuro que las opciones
-              color: '#ffffff'
+              backgroundColor: '#3b3b3b',
+              color: '#ffffff',
+              opacity: !formData.fecha ? 0.6 : 1
             }}
           >
             <option value="" disabled style={{ color: '#94a3b8', backgroundColor: '#3b3b3b' }}>
-              Selecciona una hora
+              {!formData.fecha 
+                ? 'Selecciona primero una fecha' 
+                : horasLibres.length === 0 
+                  ? 'No hay horas disponibles para este día' 
+                  : 'Selecciona una hora'}
             </option>
-            {HORAS_DISPONIBLES.map((hora) => (
+
+            {/* Mapeamos ÚNICAMENTE sobre horasLibres */}
+            {horasLibres.map((hora) => (
               <option key={hora} value={hora} style={{ color: '#ffffff', backgroundColor: '#3b3b3b' }}>
                 {hora}
               </option>
